@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import de.jensd.fx.glyphs.materialdesignicons.MaterialDesignIconView?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.text.TextFlow?>
+
+<AnchorPane prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/8.0.141" xmlns:fx="http://javafx.com/fxml/1" fx:controller="client.ClientController">
+   <children>
+      <HBox layoutX="14.0" layoutY="14.0" prefHeight="14.0" prefWidth="572.0" AnchorPane.leftAnchor="14.0" AnchorPane.rightAnchor="14.0" AnchorPane.topAnchor="14.0">
+         <children>
+            <Label prefHeight="128.0" prefWidth="50.0" text="Name: " />
+            <TextField fx:id="nameField" prefHeight="26.0" prefWidth="363.0" text="Guest" HBox.hgrow="ALWAYS" />
+            <Button fx:id="nameButton" disable="true" mnemonicParsing="false" onAction="#changeButtonName" text="Change name" />
+         </children>
+      </HBox>
+      <HBox layoutX="14.0" layoutY="360.0" prefHeight="26.0" prefWidth="572.0" AnchorPane.bottomAnchor="14.0" AnchorPane.leftAnchor="14.0" AnchorPane.rightAnchor="14.0">
+         <children>
+            <TextField fx:id="messageField" onKeyPressed="#messageFieldKeyPressed" prefHeight="26.0" prefWidth="524.0" promptText="Type message... (type '--help' for list of available commands)" HBox.hgrow="ALWAYS" />
+            <Button mnemonicParsing="false" onAction="#chooseFile">
+               <graphic>
+                  <MaterialDesignIconView glyphName="FILE" strokeType="OUTSIDE" strokeWidth="0.0" />
+               </graphic>
+            </Button>
+         </children>
+      </HBox>
+      <TextFlow fx:id="messageArea" layoutX="14.0" layoutY="48.0" prefHeight="307.0" prefWidth="572.0" style="-fx-background-color: white;" AnchorPane.bottomAnchor="48.0" AnchorPane.leftAnchor="14.0" AnchorPane.rightAnchor="14.0" AnchorPane.topAnchor="48.0" />
+   </children>
+</AnchorPane>
