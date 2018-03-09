@@ -28,6 +28,7 @@ public class SocketHandler implements Runnable {
         String total = reader.readLine();
         if (total == null) break;
         char[] buffer = new char[Integer.parseInt(total)];
+        //noinspection ResultOfMethodCallIgnored
         reader.read(buffer);
         sendAll(new String(buffer));
       }
@@ -37,9 +38,13 @@ public class SocketHandler implements Runnable {
     }
   }
 
-  private void sendAll(String message) throws IOException {
+  private void sendAll(String message) {
     for (Map.Entry<Integer, Socket> s : server.sockets.entrySet()) {
-      s.getValue().getOutputStream().write(message.getBytes());
+      try {
+        s.getValue().getOutputStream().write(message.getBytes());
+      } catch (IOException e) {
+        System.err.println("Couldn't write to client: " + s.getKey());
+      }
     }
   }
 }

@@ -16,8 +16,9 @@ public class Server {
 
   private Server() {
     int socketId = 0;
-    System.out.println("Starting server...");
+    System.out.println("Server started...");
     try (ServerSocket serverSocket = new ServerSocket(5555)) {
+      //noinspection InfiniteLoopStatement
       while (true) {
         Socket socket = serverSocket.accept();
         sockets.put(socketId, socket);

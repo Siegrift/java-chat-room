@@ -14,6 +14,9 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
+import java.nio.Buffer;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
 
 public class ClientController {
   private static final String HELP = "---Commands---\n--help = show help\n--clear = clear text area\n--link [link] = create hyperlink\n" +
@@ -69,17 +72,24 @@ public class ClientController {
   public void chooseFile() {
     FileChooser chooser = new FileChooser();
     File file = chooser.showOpenDialog(null);
+    if (file == null) return;
     byte[] bytes = new byte[16 * 1024];
-    StringBuilder builder = new StringBuilder();
+    ArrayList<Byte> fileContent = new ArrayList<>();
     try {
       InputStream in = new FileInputStream(file);
       int count;
       while ((count = in.read(bytes)) > 0) {
-        builder.append(new String(bytes).toCharArray(), 0, count);
+        for (int i = 0; i < count; i++) {
+          fileContent.add(bytes[i]);
+        }
       }
     } catch (IOException e) {
       System.out.println("Error reading file!");
     }
-    client.sendMessage("file", builder.toString());
+    StringBuilder b = new StringBuilder();
+    for (Byte byt : fileContent) {
+      b.append((char) byt.byteValue());
+    }
+    client.sendFile(file.getName(), b.toString());
   }
 }

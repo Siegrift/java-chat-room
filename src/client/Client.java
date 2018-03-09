@@ -5,17 +5,17 @@ import de.jensd.fx.glyphs.materialdesignicons.MaterialDesignIcon;
 import de.jensd.fx.glyphs.materialdesignicons.MaterialDesignIconView;
 import javafx.application.Application;
 import javafx.application.Platform;
+import javafx.event.EventHandler;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Hyperlink;
 import javafx.scene.text.Text;
+import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -83,12 +83,14 @@ public class Client extends Application implements Runnable {
             Platform.runLater(() -> processRename(name, message));
             break;
           case "file":
-            Platform.runLater(() -> controller.messageArea.getChildren().add(new Text(String.format("%s: %s\n", name, message))));
+            Platform.runLater(() -> processFile(name, message));
             break;
           case "link":
             Platform.runLater(() -> {
               controller.messageArea.getChildren().add(new Text(name + ": "));
-              controller.messageArea.getChildren().add(createHyperLink(message));
+              Hyperlink hyperLink = new Hyperlink(message);
+              hyperLink.setOnAction((event) -> HostServicesFactory.getInstance(this).showDocument(message));
+              controller.messageArea.getChildren().add(hyperLink);
               controller.messageArea.getChildren().add(new Text("\n"));
             });
             break;
@@ -101,17 +103,41 @@ public class Client extends Application implements Runnable {
     }
   }
 
+  private void processFile(String name, String message) {
+    try {
+      controller.messageArea.getChildren().add(new Text(name + ": "));
+      BufferedReader reader = new BufferedReader(new StringReader(message));
+      String fileName = readString(reader);
+      String content = readString(reader);
+      reader.close();
+      Hyperlink hyperLink = new Hyperlink(fileName);
+      hyperLink.setOnAction((event) -> {
+        FileChooser chooser = new FileChooser();
+        chooser.setInitialFileName(fileName);
+        File file = chooser.showSaveDialog(null);
+        if (file == null) return;
+        try (BufferedOutputStream writer = new BufferedOutputStream(new FileOutputStream(file))) {
+          byte[] byteContent = new byte[content.length()];
+          for (int i = 0;i < byteContent.length;i++) {
+            byteContent[i] = (byte) content.charAt(i);
+          }
+          writer.write(byteContent);
+        } catch (IOException e) {
+          e.printStackTrace();
+        }
+      });
+      controller.messageArea.getChildren().add(hyperLink);
+      controller.messageArea.getChildren().add(new Text("\n"));
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+  }
+
   private String readString(BufferedReader reader) throws IOException {
     int length = Integer.parseInt(reader.readLine());
     char[] buffer = new char[length];
     if (reader.read(buffer) == -1) throw new IOException("Read -1");
     return String.valueOf(buffer);
-  }
-
-  private Node createHyperLink(String link) {
-    Hyperlink hyperLink = new Hyperlink(link);
-    hyperLink.setOnAction((event) -> HostServicesFactory.getInstance(this).showDocument(link));
-    return hyperLink;
   }
 
   private void processRename(String oldName, String newName) {
@@ -172,5 +198,10 @@ public class Client extends Application implements Runnable {
     historyPointer = Math.max(Math.min(historyPointer, history.size()), 0);
     if (historyPointer == history.size()) controller.messageField.clear();
     else controller.messageField.setText(history.get(historyPointer));
+  }
+
+  public void sendFile(String fileName, String content) {
+    String message = String.format("%d\n%s%d\n%s", fileName.length(), fileName, content.length(), content);
+    sendMessage("file", message);
   }
 }
