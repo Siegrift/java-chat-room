@@ -90,6 +90,7 @@ public class ClientController {
     for (Byte byt : fileContent) {
       b.append((char) byt.byteValue());
     }
-    client.sendFile(file.getName(), b.toString());
+    String message = String.format("%d\n%s%d\n%s", file.getName().length(), file.getName(), b.toString().length(), b.toString());
+    client.sendMessage("file", message);
   }
 }

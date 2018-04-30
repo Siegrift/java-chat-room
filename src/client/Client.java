@@ -15,6 +15,8 @@ import javafx.scene.text.Text;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
+import javax.crypto.Cipher;
+import javax.crypto.spec.SecretKeySpec;
 import java.io.*;
 import java.net.Socket;
 import java.util.ArrayList;
@@ -28,6 +30,8 @@ public class Client extends Application implements Runnable {
   private ArrayList<String> history = new ArrayList<>();
   private int historyPointer = 0;
   private HashMap<String, MaterialDesignIcon> icons = new HashMap<>();
+  private SecretKeySpec secretKey;
+  private Cipher cipher;
 
   public static void main(String a[]) {
     launch(a);
@@ -36,6 +40,9 @@ public class Client extends Application implements Runnable {
   @Override
   public void start(Stage primaryStage) throws Exception {
     FXMLLoader loader = new FXMLLoader(getClass().getResource("client.fxml"));
+    cipher = Cipher.getInstance("AES");
+    String AES_PASS = "hello world 0000";
+    secretKey = new SecretKeySpec(AES_PASS.getBytes(), "AES");
     Parent root = loader.load();
     controller = loader.getController();
     controller.init(this, name);
@@ -67,11 +74,24 @@ public class Client extends Application implements Runnable {
     icons.put(":p", MaterialDesignIcon.EMOTICON_TONGUE);
   }
 
+  private byte[] readMessage() throws IOException {
+    StringBuilder size = new StringBuilder();
+    int c;
+    while ((c = socket.getInputStream().read()) != '\n') size.append((char) c);
+    byte[] buffer = new byte[Integer.parseInt(size.toString())];
+    int check = socket.getInputStream().read(buffer);
+    if (check != Integer.parseInt(size.toString())) throw new IOException("Incorrect checksum in read");
+    return buffer;
+  }
+
   @Override
   public void run() {
     try {
-      BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
       while (true) {
+        byte [] encrypted = readMessage();
+        cipher.init(Cipher.DECRYPT_MODE, secretKey);
+        String decrypted = new String(cipher.doFinal(encrypted));
+        BufferedReader reader = new BufferedReader(new StringReader(decrypted));
         String command = reader.readLine();
         String name = readString(reader);
         String message = readString(reader);
@@ -100,6 +120,9 @@ public class Client extends Application implements Runnable {
       }
     } catch (IOException e) {
       System.out.println("Error reading client socket");
+    } catch (Exception e){
+      e.printStackTrace();
+      System.out.println("Error decrypting");
     }
   }
 
@@ -174,8 +197,10 @@ public class Client extends Application implements Runnable {
   void sendMessage(String command, String message) {
     try {
       String toWrite = String.format("%s\n%d\n%s%d\n%s", command, name.length(), name, message.length(), message);
-      socket.getOutputStream().write(String.format("%d\n%s", toWrite.length(), toWrite).getBytes());
-    } catch (IOException e) {
+      cipher.init(Cipher.ENCRYPT_MODE, secretKey);
+      byte[]bts = cipher.doFinal(toWrite.getBytes());
+      socket.getOutputStream().write(bts);
+    } catch (Exception e) {
       System.out.println("Error sending message");
     }
   }
@@ -198,10 +223,5 @@ public class Client extends Application implements Runnable {
     historyPointer = Math.max(Math.min(historyPointer, history.size()), 0);
     if (historyPointer == history.size()) controller.messageField.clear();
     else controller.messageField.setText(history.get(historyPointer));
-  }
-
-  public void sendFile(String fileName, String content) {
-    String message = String.format("%d\n%s%d\n%s", fileName.length(), fileName, content.length(), content);
-    sendMessage("file", message);
   }
 }
